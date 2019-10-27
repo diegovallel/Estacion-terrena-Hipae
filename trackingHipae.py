@@ -60,6 +60,7 @@ def leerTrama():
     except Exception as e:
         print("****ERROR LEYENDO TRAMA*****")
         print(e)
+
 def procesarTrama(lineas,set):
     global tiempo,latitud_geo,longitud_geo,altitudGps,curso,velocidad,alturaBar,tempeSHT11,voltajebater,tempeBar,presionbar,humedadDHT11
     try:
@@ -226,7 +227,6 @@ def procesarTrama(lineas,set):
                     if bit == "Q": #Si se cumple se garantiza existencia de trama hasta "Q"
                         tempADC =  valores[3].split("P")[1].split("Q")[0].strip()
                         presionbar =  valores[3].split("Q")[1].strip()
-                        enviarWeb(tiempo,latitud_geo,longitud_geo,altitudGps,curso,velocidad,alturaBar,tempeSHT11,voltajebater,tempeBar,presionbar,humedadDHT11)
                         #print("tempADC: " + tempADC)
                         #print("presionbar: " + presionbar)
                         #print("trama larga Gases completa")
@@ -276,7 +276,6 @@ def procesarTrama(lineas,set):
                         #print("temperaturaSHT11: " +  str(float(tempeSHT11)/100))
                         #print("voltajebater: " + str(float(voltajebater)/1000))
                         print("trama corta completa")
-                        enviarWeb(tiempo,latitud_geo,longitud_geo,altitudGps,curso,velocidad,alturaBar,tempeSHT11,voltajebater,tempeBar,presionbar,humedadDHT11)
             #Se debe guardar de manera recurrente las coordenadas de la estacion terrena y la gondola
             #para el caso en el que se reinicie la aplicacion y no se haya movido la estacion, poder
             #recuperar el tracking seteando nuevamente de manera automatica
@@ -294,6 +293,7 @@ def procesarTrama(lineas,set):
     except Exception as e:
         print("******ERROR PROCESANDO TRAMA********")
         print(e)
+
 def transformarTrama(latitud,longitud):
     try:
         longitud_geo = 0
@@ -338,53 +338,7 @@ def transformarTrama(latitud,longitud):
     except Exception as e:
         print("*****ERROR TRANSFORMANDO TRAMA*****")
         print(e)
-def enviarWeb(tempo,lati,longi,altu,curs,velo,altuba,tempera,volta,temperabar,presBar,humeDht):
-    try:
-        tempoH=tempo[0:2]
-        tempoM=tempo[2:4]
-        tempoS=tempo[4:6]
-        tempo=tempoH+":"+tempoM+":"+tempoS
-        band_altitudGPS = 0
-        band_altitudBAR = 0
-        offset_GPS = 0
-        offset_BAR = 0
-        curs=str(float(curs)-0.5)
-        if float(velo)>0.5:
-            velo=str(float(velo)-0.5)
-        volta=str(float(volta)/1000)
-        tempera = str(float(tempera)/100)
-        if(band_altitudBAR == 0):
-            offset_BAR = float(altuba)
-            band_altitudBAR = 1
-        altuba = str(float(altuba) - offset_BAR)
-        if(band_altitudGPS == 0):
-            offset_GPS = float(altu)
-            band_altitudGPS = 1
-        altu = str(float(altu) - offset_GPS)
-        temperabar = str(float(temperabar)/100)
-        presBar = str(float(presBar)/100)
-        humeDht = str(float(humeDht)/100)
-        mqttmsg='"gps_time":"{}",' \
-                '"gps_latitude":"{}",' \
-                '"gps_longitude":"{}",' \
-                '"gps_altitude":"{}",' \
-                '"gps_course":"{}",' \
-                '"gps_speed":"{}",' \
-                '"barometer_Altitude":"{}",' \
-                '"temperature_sht11":"{}",' \
-                '"voltaje_bateria":"{}",'\
-                '"barometer_temperature":"{}",' \
-                '"barometer_Pressure":"{}",' \
-                '"humidity_sht11":"{}"'.format(tempo,lati,longi,altu,curs,velo,altuba,tempera,volta,temperabar,presBar,humeDht)
-        mqttmsg = "{" + mqttmsg + "}"
-        #print(mqttmsg)
-        r = requests.post("http://www.cansats3kratos.me/data/", data=mqttmsg,headers = {'content-type':'application/json'})
-        #print (r.status_code)
-        #print (r.headers)
-        print ("trama enviada a web")
-    except Exception as e:
-        print("*******ERROR ENVIANDO A WEB******")
-        print(e)
+
 def modelo(lati, longi, alti):
     try:
         latitudG = float(lati)
@@ -447,6 +401,7 @@ def modelo(lati, longi, alti):
     except Exception as e:
         print("*****ERROR CALCULANDO MODELO****")
         print(e)
+
 def enviarArduino(angulo_theta, angulo_omega, state):
     try:
         SET = state
@@ -557,104 +512,12 @@ def enviarArduino(angulo_theta, angulo_omega, state):
     except Exception as e:
         print("******ERROR ENVIANDO A ARDUINO*****")
         print(e)
-def estimar(DuAnt,DvAnt,DwAnt,DuNue,DvNue,DwNue):
-    Cu = DuNue - DuAnt
-    Cv = DvNue - DvAnt
-    Cw = DwNue - DwAnt
-    P_1u = (1/4)*Cu + DuNue
-    P_1v = (1/4)*Cv + DvNue
-    P_1w = (1/4)*Cw + DwNue
-    P_2u = (1/2)*Cu + DuNue
-    P_2v = (1/2)*Cv + DvNue
-    P_2w = (1/2)*Cw + DwNue
-    return [P_1u,P_1v,P_1w,P_2u,P_2v,P_2w]
-def modeloVector(Du,Dv,Dw):
-    divCero = 0
-    Distancia = math.sqrt(Du*Du+Dv*Dv+Dw*Dw)
-    if abs(Du) < 1:
-        Du = 0
-        divCero = divCero + 1
-    if abs(Dv) < 1:
-        Dv = 0
-        divCero = divCero + 1
-    if abs(Dw) < 1:
-        Dw = 0
-        divCero = divCero + 1
-    if divCero < 3:
-        divCero = 0
-        omega_prima_estimada = math.asin(Dv/Distancia)*180/3.14159265358979
-    if Du < 0:
-        theta_prima_estimada = -math.acos(Dw/math.sqrt(Du*Du+Dw*Dw))*180/3.141592653589793
-    else:
-        theta_prima_estimada = math.acos(Dw/math.sqrt(Du*Du+Dw*Dw))*180/3.141592653589793
-    return [theta_prima_estimada,omega_prima_estimada]
-def estimacion():
-    DuAnt = MatrizD[len(MatrizD)-2][0]
-    DvAnt = MatrizD[len(MatrizD)-2][1]
-    DwAnt = MatrizD[len(MatrizD)-2][2]
-    DuNue = MatrizD[len(MatrizD)-1][0]
-    DvNue = MatrizD[len(MatrizD)-1][1]
-    DwNue = MatrizD[len(MatrizD)-1][2]
-    coordEstim = estimar(DuAnt,DvAnt,DwAnt,DuNue,DvNue,DwNue)
 
-    angulosEstim_v1 = modeloVector(coordEstim[0],coordEstim[1],coordEstim[2])
-    #print("theta_prima_estim_1: " + str(angulosEstim_v1[0]))
-    #print("omega_prima_estim_1: " + str(angulosEstim_v1[1]))
-    enviarArduino(angulosEstim_v1[0],angulosEstim_v1[1])
 
-    angulosEstim_v2 = modeloVector(coordEstim[3],coordEstim[4],coordEstim[5])
-    #print("theta_prima_estim_2: " + str(angulosEstim_v2[0]))
-    #print("omega_prima_estim_2: " + str(angulosEstim_v2[1]))
-    enviarArduino(angulosEstim_v2[0],angulosEstim_v1[1])
-def fusionar(AltG,AltB):
-    try:
-        global vectorAlturaGps, vectorAlturaBar, sumaAlturaBar, sumaAlturaGps, sumaVarianzaAlturaBar, sumaVarianzaAlturaGps, cuentaFusion
-        vectorAlturaGps.append(AltG)
-        vectorAlturaBar.append(AltB)
-        vectorAlturaGps_float = [float(i) for i in vectorAlturaGps]
-        vectorAlturaBar_float = [float(i) for i in vectorAlturaBar]
-        k = j = 0
-        if len(vectorAlturaBar) == 1 and len(vectorAlturaGps) == 1:
-            alturaFus = 0.5*float(AltG) + 0.5*float(AltB)
-        elif len(vectorAlturaBar) > 1 and len(vectorAlturaGps) > 1:
-            for suma in vectorAlturaBar_float:
-                sumaAlturaBar += suma
-            promedioAlturaBar = sumaAlturaBar/len(vectorAlturaBar)
-            for n in range(len(vectorAlturaBar)):
-                sumaVarianzaAlturaBar += (float(vectorAlturaBar[j])-promedioAlturaBar)*(float(vectorAlturaBar[j])-promedioAlturaBar)
-                j = j + 1
-            varianzaAlturaBar = sumaVarianzaAlturaBar/len(vectorAlturaBar)
-            for suma in vectorAlturaGps_float:
-                sumaAlturaGps += suma
-            promedioAlturaGps = sumaAlturaGps/len(vectorAlturaGps)
-            for n in range(len(vectorAlturaGps)):
-                sumaVarianzaAlturaGps += (float(vectorAlturaGps[k])-promedioAlturaGps)*(float(vectorAlturaGps[k])-promedioAlturaGps)
-                k = k + 1
-            varianzaAlturaGps = sumaVarianzaAlturaGps/len(vectorAlturaGps)
-
-            if varianzaAlturaBar != 0 or varianzaAlturaGps != 0:
-                pesoAlturaGps = varianzaAlturaBar/(varianzaAlturaBar + varianzaAlturaGps)
-                pesoAlturaBar = 1 - pesoAlturaGps
-            else:
-                pesoAlturaGps = 0.5
-                pesoAlturaBar = 0.5
-            alturaFus = pesoAlturaBar*float(AltB) + pesoAlturaGps*float(AltG)
-        if len(vectorAlturaGps) > 5 or len(vectorAlturaBar) > 5:
-            vectorAlturaGps = []
-            vectorAlturaBar = []
-            sumaAlturaBar = 0
-            sumaAlturaGps = 0
-            sumaVarianzaAlturaBar = 0
-            sumaVarianzaAlturaGps = 0
-        cuentaFusion = 1
-        return str(alturaFus)
-    except Exception as e:
-        print("*****  ERROR FUSIONANDO DATOS  *****")
-        print(e)
-
-try:
+#SETEAR POSICIONES INICIALES GONDOLA Y ESTACION
+while(1):
     continuar = 0
-    while(1):
+    try:
         trama = leerTrama()
         if trama != 0 and trama != 1:
             print(trama)
@@ -689,28 +552,30 @@ try:
             break
             print("_________________")
         time.sleep(0.1)
-    archivo2 = open(nombreArchivoSETLeerEscribir,"r")
-    datoSET = archivo2.readlines()
-    latitudE = float(datoSET[0].split("/")[1])
-    longitudE = float(datoSET[1].split("/")[1])
-    altitudE = float(datoSET[2].split("/")[1])
-    latitudG_i = float(datoSET[3].split("/")[1])
-    longitudG_i = float(datoSET[4].split("/")[1])
-    altitudG_i = float(datoSET[5].split("/")[1])
-    angulosSET = modelo(latitudG_i,longitudG_i,altitudG_i)
-    thetaSET = angulosSET[0]
-    omegaSET = angulosSET[1]
-    archivo2.close()
-    enviarArduino(thetaSET,omegaSET,True)
-    print("__________________________________________")
-except Exception as e:
-    while(1):
-        print(e)
-        print("****ERROR GENERANDO SET***")
-        time.sleep(1)
+
+        archivo2 = open(nombreArchivoSETLeerEscribir,"r")
+        datoSET = archivo2.readlines()
+        latitudE = float(datoSET[0].split("/")[1])
+        longitudE = float(datoSET[1].split("/")[1])
+        altitudE = float(datoSET[2].split("/")[1])
+        latitudG_i = float(datoSET[3].split("/")[1])
+        longitudG_i = float(datoSET[4].split("/")[1])
+        altitudG_i = float(datoSET[5].split("/")[1])
+        angulosSET = modelo(latitudG_i,longitudG_i,altitudG_i)
+        thetaSET = angulosSET[0]
+        omegaSET = angulosSET[1]
+        archivo2.close()
+        enviarArduino(thetaSET,omegaSET,True)
+        print("__________________________________________")
+    except Exception as e:
+        while(1):
+            print(e)
+            print("****ERROR GENERANDO SET***")
+            time.sleep(1)
 
 time.sleep(2)
 
+#FLUJO PRINCIPAL
 while (1):
     try:
         trama = leerTrama()
