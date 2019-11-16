@@ -23,18 +23,17 @@
 #define IN2_MH  11
 #define IN3_MH  10
 #define IN4_MH  9
-
 #define IN1_MV  8
 #define IN2_MV  7
 #define IN3_MV  6
 #define IN4_MV  5*/
 
-#define SENTIDO_MV 7
-#define PASOS_MV 6
+#define SENTIDO_MV 6
+#define PASOS_MV 7
 #define ENABLE_MV 5
-#define SENTIDO_MH 4
-#define PASOS_MH 3
-#define ENABLE_MH 2 
+#define SENTIDO_MH 3
+#define PASOS_MH 2
+#define ENABLE_MH 4 
 
 #define bateriaVolt A3
 #define pinJoyX  A0
@@ -82,7 +81,6 @@ double omega;
 double theta_error;
 double omega_error;
 double theta_bru;
-double decliMAG = -6.23;
 boolean iniciar = false;
 int pasosPorVuelta = 12000;
 int repeticiones = 1;
@@ -145,9 +143,8 @@ void setup() {
     digitalWrite(SDDmal, HIGH);
     return;
   }*/
-  //buscarSetVertical();    //garantia de omega = 0
-  omega = 0;                //vector actual antena
-  theta = 0;                //vector actual antena
+  omega = 0;                //angulo vertical actual(relativo) de la antena
+  theta = 0;                //angulo horizontal actual(relativo) de la antena
 }
 
 //T-36000O-3600072253
@@ -170,7 +167,7 @@ void lecturaPuertoProcesa(){
      datoRecibido = true;
      delay(2);
   }
-    if (receivedCommand.length() == 19 ){
+  if (receivedCommand.length() == 19 ){
       datoRecibido = false;
       if (receivedCommand.substring(0,1) == "T"){
         suma += 84;
@@ -257,7 +254,7 @@ void autonomo_O_manual(){
       for (int i=0; i<5; i++){
         //motorHorizontal(Xvalue+1);
         motorHorizontal(2);
-        
+        //Serial.println("girando izquierda");
       }
       //Serial.print("X+ ");
       //Serial.println(pasosManual++);
@@ -268,6 +265,7 @@ void autonomo_O_manual(){
       for (int i=0; i<5; i++){
         //motorHorizontal((1023-Xvalue)+1);
         motorHorizontal(2);
+        //Serial.println("girando derecha");
       }
       //Serial.print("X- ");
       //Serial.println(pasosManual++);
@@ -278,10 +276,11 @@ void autonomo_O_manual(){
       for (int i=0; i<5; i++){
         //motorVertical(Yvalue+1);
         motorVertical(2);
+        //Serial.println("girando abajo");
         //Serial.println(pasosManual++);
       }
-      /*Serial.print("Y+ ");
-      Serial.println(pasosManual++);*/
+      //Serial.print("Y+ ");
+      //Serial.println(pasosManual++);
     }
     if (Yvalue > 530){
       //girar arriba
@@ -289,9 +288,10 @@ void autonomo_O_manual(){
       for (int i=0; i<5; i++){
         //motorVertical((1023-Yvalue)+1);
         motorVertical(2);
+        //Serial.println("girando arriba");
       }
-      /*Serial.print("Y- ");
-      Serial.println(pasosManual++);*/
+      /*Serial.print("Y- ");*/
+      //Serial.println(pasosManual++);
     }
   }else{
     digitalWrite(ENABLE_MH, LOW);
@@ -312,14 +312,19 @@ void autonomo_O_manual(){
 }
 
 void controlReal(){
-  theta_error = theta_prima - (theta - decliMAG);
+  //omega y theta son los angulos actuales de la estacion
+  //omega_prima y theta_prima son los angulos deseados de la estacion
+  theta_error = theta_prima - theta;
+  omega_error = omega_prima - omega;
+
+  //Rectificar angulo para realizar giro mas corto posible
   if (theta_error > 180){
-    theta_error = -360 - (theta - decliMAG) + theta_prima;
+    theta_error = -360 - theta + theta_prima;
   }
   if (theta_error < -180){
-    theta_error = 360 - (theta - decliMAG) + theta_prima;
+    theta_error = 360 - theta + theta_prima;
   }
-  omega_error = omega_prima - omega;
+  
   //Serial.println(theta_error);
   //Serial.println(omega_error);
   int pasosHoriz = int(((pasosPorVuelta/360) * theta_error)/repeticiones);
@@ -345,13 +350,13 @@ void controlReal(){
     
     if (pasosVerti > 0){
       if (numPasos_MV < abs(pasosVerti)){
-        digitalWrite(SENTIDO_MV, LOW); //verificar
+        digitalWrite(SENTIDO_MV, HIGH); //verificar
         motorVertical(2);
         numPasos_MV++;
       }else{romper_MV = true;}
     }else{
       if (numPasos_MV < abs(pasosVerti)){
-        digitalWrite(SENTIDO_MV, HIGH); //verificar
+        digitalWrite(SENTIDO_MV, LOW); //verificar
         motorVertical(2);
         numPasos_MV++;
       }else{romper_MV = true;}
@@ -366,9 +371,11 @@ void controlReal(){
   }
   digitalWrite(ENABLE_MV, LOW);
   digitalWrite(ENABLE_MH, LOW);
-  //control lazo abierto
+
+  
+  //control lazo abierto (los motores garantizan por si mismos el angulo que se les especifica)
   omega = omega_prima; 
-  theta = theta_prima + decliMAG;
+  theta = theta_prima;
 }
 
 
@@ -398,12 +405,13 @@ void motorVertical(int velocidad){
   }
 }
 */
+/*
 void buscarSetVertical(){
   while(analogRead(setVertical) < 900){
     digitalWrite(SENTIDO_MH, HIGH); //verificar debe girar a la derecha (vista lateral)
     motorVertical(2);
   }  
-}
+}*/
 
 /*void medirAngulo(){ 
   float xx, yy, zz;
@@ -548,4 +556,3 @@ void buscarSetVertical(){
     tiempoAnterior = millis();  //guarda el tiempo actual como referencia
   }
 }*/
-
