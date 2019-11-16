@@ -379,9 +379,13 @@ def modelo(lati, longi, alti):
 
         vectorD = [Duvw_1,Duvw_2,Duvw_3]
         MatrizD.append(vectorD)
-        archivo1 = open(nombreVectorTrayectoriaGuardar,"a")
-        archivo1.write(str(vectorD) + '\n')
-        archivo1.close()
+        try:
+            archivo1 = open(nombreVectorTrayectoriaGuardar,"a")
+            archivo1.write(str(vectorD) + '\n')
+            archivo1.close()
+        except:
+            print("*** AVISO - vector no logro guardarse ***")
+            print(e)
 
         Distancia = math.sqrt(Duvw_1*Duvw_1+Duvw_2*Duvw_2+Duvw_3*Duvw_3)
         if Distancia > 0.0:
@@ -400,7 +404,7 @@ def modelo(lati, longi, alti):
         else:
             return[0.0, 0.0]
     except Exception as e:
-        print("*****ERROR CALCULANDO MODELO****")
+        print("*** ERROR CRITICO - FALLA CALCULANDO MODELO ****")
         print(e)
 
 def enviarArduino(angulo_theta, angulo_omega, state):
