@@ -372,27 +372,28 @@ def modelo(lati, longi, alti):
         Duvw_3 = -math.sin(alfaP)*Dw_2+math.cos(alfaP)*Dw_3
         if abs(Duvw_1) < 1:
             Duvw_1 = 0.0
-            divCero = divCero + 1
         if abs(Duvw_2) < 1:
             Duvw_2 = 0.0
-            divCero = divCero + 1
         if abs(Duvw_3) < 1:
             Duvw_3 = 0.0
-            divCero = divCero + 1
+
         vectorD = [Duvw_1,Duvw_2,Duvw_3]
         MatrizD.append(vectorD)
         archivo1 = open(nombreVectorTrayectoriaGuardar,"a")
         archivo1.write(str(vectorD) + '\n')
         archivo1.close()
+
         Distancia = math.sqrt(Duvw_1*Duvw_1+Duvw_2*Duvw_2+Duvw_3*Duvw_3)
-        if Distancia > 0:
-            if divCero < 3:
-                divCero = 0
-                omega_prima = math.asin(Duvw_2/Distancia)*180/3.14159265358979
-            if Duvw_1 < 0:
+        if Distancia > 0.0:
+            omega_prima = math.asin(Duvw_2/Distancia)*180/3.14159265358979
+            if Duvw_1 < 0.0:
                 theta_prima = -math.acos(Duvw_3/math.sqrt(Duvw_1*Duvw_1+Duvw_3*Duvw_3))*180/3.141592653589793
-            else:
+            elif Duvw_1 > 0.0:
                 theta_prima = math.acos(Duvw_3/math.sqrt(Duvw_1*Duvw_1+Duvw_3*Duvw_3))*180/3.141592653589793
+            elif Duvw_1 == 0.0 and Duvw_3 == 0.0:
+                theta_prima = 0.0
+            else:
+                theta_prima = 0.0
             angulo_omega = omega_prima
             angulo_theta = theta_prima
             return [angulo_theta, angulo_omega]
