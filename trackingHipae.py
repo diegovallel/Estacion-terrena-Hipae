@@ -573,10 +573,9 @@ while(1):
         enviarArduino(thetaSET,omegaSET,True)
         print("__________________________________________")
     except Exception as e:
-        while(1):
-            print(e)
-            print("****ERROR GENERANDO SET***")
-            time.sleep(1)
+        print("****ERROR GENERANDO SET***")
+        print(e)
+        time.sleep(1)
 
 time.sleep(2)
 
